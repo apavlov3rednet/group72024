@@ -3,8 +3,8 @@ return [
     'connections' => [
         'value' => [
             'default' => [
-                'host' => 'localhost',
-                'database' => '',
+                'host' => 'MySQL-8.0',
+                'database' => 'groupseven',
                 'login' => 'root',
                 'password' => '',
             ]

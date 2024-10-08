@@ -1,3 +1,7 @@
+@alexxhub
+
+
+
 /* Создание таблицы */
 CREATE TABLE IF NOT EXISTS users (
     `ID` INT(100) NOT NULL AUTOINCREMENT,
