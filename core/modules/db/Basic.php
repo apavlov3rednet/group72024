@@ -1,26 +1,31 @@
 <?php
 
-namespace Core\DB;
+namespace DB;
 
-use Core\Main\Settings;
+use Main\Settings;
+use Main\Logs;
 use PDO;
 use PDOException;
 
 class Basic
 {
-    private $dbname;
-    private $database;
-    private $host;
-    private $user;
-    protected $password;
-    private $conn;
+    public $dbname;
+    public $database;
+    public $host;
+    public $user;
+    public $password;
+    public $conn;
+
+    public $settings;
 
     public function __construct(string $dbname = 'default')
     {
+        $this->settings = new Settings();
+        $arSettings = $this->settings->getDbParams($dbname);
         $this->dbname = $dbname;
-        $arSettings = Settings::getDbParams($dbname);
+
         $this->host = $arSettings['host'];
-        $this->user = $arSettings['user'];
+        $this->user = $arSettings['login'];
         $this->password = $arSettings['password'];
         $this->database = $arSettings['database'];
 
@@ -38,9 +43,22 @@ class Basic
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             return true;
         } catch (PDOException $e) {
-            \Core\Main\Logs::add2Log('Connection fails: ' . $e->getMessage());
+            Logs::add2Log('Connection fails: ' . $e->getMessage());
             $this->conn = null;
             return false;
+        }
+    }
+
+    private function prepareFilter($arFilter, &$sql, &$filter, &$execute) {
+        if (!empty($arFilter)) {
+            foreach ($arFilter as $key => $value) {
+                $filter[] = $key . ' = ?';
+                $execute[] = $value;
+            }
+        }
+
+        if (!empty($filter)) {
+            $sql .= ' WHERE ' . join(', ', $filter);
         }
     }
 
@@ -76,40 +94,34 @@ class Basic
 
         //Основная выборка из таблицы
         $sql = 'SELECT ';
-        $select = join(', ', $params['select']) ?? '*';
+        $select = (!empty($params['select'])) ? join(', ', $params['select']) : '*';
 
         $sql .= $select . ' ';
         $sql .= 'FROM ' . $table;
 
         //Применение фильтров в выборке
-        if (is_array($params['filter']) && !empty($params['filter'])) {
-            foreach ($params['filter'] as $key => $value) {
-                $filter[] = $key . ' = ?';
-                $execute[] = $value;
-            }
-        }
-
-        if (!empty($filter)) {
-            $sql .= ' WHERE ' . join(', ', $filter);
+        $this->prepareFilter($params['filter'], $sql, $filter, $execute);
+        
+        //Сортировка
+        if (!empty($params['order'])) {
+            $key = array_key_first($params['order']);
+            $sql .= ' ORDER BY ' . $key  . ' ' . $params['order'][$key];
         }
 
         //Применение лимитов и стратовой позиции выборки
         if (!empty($params['limit'])) {
-            $limit = $params['limit']['rows'] > 0 ? $params['limit']['rows'] : 100;
-            $offset = $params['limit']['offset'] > 0 ? $params['limit']['offset'] : 0;
+            $limit = (!empty($params['limit']['rows'])) ? $params['limit']['rows'] : $limit;
+            $offset = (!empty($params['limit']['offset'])) ? $params['limit']['offset'] : $offset;
 
-            $sql .= ' LIMIT = ' . $limit;
-            $sql .= ' OFFSET = ' . $offset;
-        }
-
-        //Сортировка
-        if (!empty($params['order'])) {
-            $key = array_key_first($params['order']);
-            $sql .= ' ORDER BY ' . $key  . ' = ' . $params['order'][$key];
+            $sql .= ' LIMIT ' . $limit;
+            $sql .= ' OFFSET ' . $offset;
         }
 
         //Запрос и ответ
         $result = [];
+
+        echo $sql;
+
         try {
             $request = $this->conn->prepare($sql);
             $request->execute($execute);
@@ -121,8 +133,52 @@ class Basic
                 $result[] = $row;
             }
         } catch (PDOException $e) {
-            \Core\Main\Logs::add2Log('Query get list fail: ' . $e->getMessage()); 
+            Logs::add2Log('Query get list fail: ' . $e->getMessage()); 
         }
         return $result;
+    }
+
+    /**
+     * Summary of add
+     * @param string $table
+     * @param array $arFields = [
+     *  'KEY' => 'VALUE',
+     *  'KEY2' => 'VALUE'
+     * ]
+     * @return void
+     */
+    public function add(string $table, array $arFields) {
+        try {
+            $fields = join(', ', array_keys($arFields));
+            $prepValues =  ':' .join(', :', array_keys($arFields));
+            $values = [];
+            
+            $sql = 'INSERT INTO ' . $table . '(' . $fields . ') VALUES (' . $prepValues . ')';
+            // INSERT INTO table (KEY, KEY2) VALUES (:KEY, :KEY2)
+    
+            $request = $this->conn->prepare($sql);
+    
+            foreach($arFields as $key => $value) {
+                $request->bindValue(':'. $key, $value); // :KEY , VALUE
+            }
+    
+            $newRow = $request->execute();
+            //todo: сделать возврат добавленнего ID
+        }
+        catch(PDOException $e) {
+            Logs::add2Log('Query add: ' . $e->getMessage()); 
+        }
+    }
+
+    public function deleteById(string $table, int $id) {
+        try {
+            $sql = 'DELETE FROM ' . $table. ' WHERE ID = ?';
+            $request = $this->conn->prepare($sql);
+            $request->execute([$id]);
+            
+        }
+        catch(PDOException $e) {
+            Logs::add2Log('Query drop: ' . $e->getMessage()); 
+        }
     }
 }

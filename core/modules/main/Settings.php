@@ -1,26 +1,26 @@
 <?php
 
-namespace Core\Main;
+namespace Main;
 
 class Settings {
-    protected $arSettings;
+    private $arSettings;
 
     public function __construct()
     {
-        if(file_exists('../../.settings.php')) {
-            self::$arSettings = require_once('../../.settings.php');
+        if(file_exists($_SERVER['DOCUMENT_ROOT'] . '/core/.settings.php')) {
+            $this->arSettings = require_once($_SERVER['DOCUMENT_ROOT'] . '/core/.settings.php');
         }
         //include, inlcude_once, require, require_once
     }
 
-    static public function getDbParams(string $dbname = 'default') : mixed
+    public function getDbParams(string $dbname = 'default') : mixed
     {
-        return self::$arSettings['connections']['value'][$dbname] || false;
+        return $this->arSettings['connections']['value'][$dbname];
     }
 
-    static public function getSessionParams() : mixed
+    public function getSessionParams() : mixed
     {
-        return self::$arSettings['session'] || [];
+        return $this->arSettings['session'];
     }
 
 }
