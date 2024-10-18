@@ -8,7 +8,7 @@ class Settings {
     public function __construct()
     {
         if(file_exists($_SERVER['DOCUMENT_ROOT'] . '/core/.settings.php')) {
-            $this->arSettings = require_once($_SERVER['DOCUMENT_ROOT'] . '/core/.settings.php');
+            $this->arSettings = require($_SERVER['DOCUMENT_ROOT'] . '/core/.settings.php');
         }
         //include, inlcude_once, require, require_once
     }

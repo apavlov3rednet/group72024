@@ -1,11 +1,10 @@
 <?php
 require_once($_SERVER['DOCUMENT_ROOT'] . '/core/header.php');
 
-use DB\Basic;
 ?>
 
     <?php
-    $result = new Basic();
+    $result = new DB\Basic();
     
     $arResult = $result->getList('users', [
         'select' => ['LOGIN'],
@@ -19,5 +18,13 @@ use DB\Basic;
     ?>
 
     <pre><?print_r($arResult);?></pre>
+
+    <?
+    Application::initComponent('news.list', [
+        'table' => 'news',
+        'count' => 10
+    ]);
+    
+    ?>
 
 <?php require_once($_SERVER['DOCUMENT_ROOT'] . '/core/footer.php');?>

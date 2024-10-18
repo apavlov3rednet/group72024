@@ -100,7 +100,8 @@ class Basic
         $sql .= 'FROM ' . $table;
 
         //Применение фильтров в выборке
-        $this->prepareFilter($params['filter'], $sql, $filter, $execute);
+        if(!empty($params['filter']))
+            $this->prepareFilter($params['filter'], $sql, $filter, $execute);
         
         //Сортировка
         if (!empty($params['order'])) {
@@ -119,9 +120,6 @@ class Basic
 
         //Запрос и ответ
         $result = [];
-
-        echo $sql;
-
         try {
             $request = $this->conn->prepare($sql);
             $request->execute($execute);
@@ -145,7 +143,7 @@ class Basic
      *  'KEY' => 'VALUE',
      *  'KEY2' => 'VALUE'
      * ]
-     * @return void
+     * @return mixed
      */
     public function add(string $table, array $arFields) {
         try {
@@ -162,23 +160,92 @@ class Basic
                 $request->bindValue(':'. $key, $value); // :KEY , VALUE
             }
     
-            $newRow = $request->execute();
-            //todo: сделать возврат добавленнего ID
+            if($request->execute()) {
+                $id = $this->conn->lastInsertId('ID');
+                return $id;
+            }
+            else {
+                return false;
+            }
+            
         }
         catch(PDOException $e) {
             Logs::add2Log('Query add: ' . $e->getMessage()); 
         }
     }
 
-    public function deleteById(string $table, int $id) {
+    public function delete(string $table, array $where) {
         try {
-            $sql = 'DELETE FROM ' . $table. ' WHERE ID = ?';
+            $filter = [];
+            $execute = [];
+            $sql = 'DELETE FROM ' . $table;
+            $this->prepareFilter($where, $sql, $filter, $execute);
+            //DELETE FROM users WHERE ID = ?
             $request = $this->conn->prepare($sql);
-            $request->execute([$id]);
-            
+
+            if($request->execute($execute)) {
+                return true;
+            }
+            else {
+                Logs::add2Log('Error sql: '. $sql);
+                return false;
+            }
         }
         catch(PDOException $e) {
-            Logs::add2Log('Query drop: ' . $e->getMessage()); 
+            Logs::add2Log('delete: '. $e->getMessage());
+            return false;
         }
     }
+
+    public function update(string $table, int $id, array $arFields) {
+        try {
+            //UPDATE `users` SET `LOGIN` = :LOGIN, `PASSWORD` = :PASSWORD WHERE `users`.`ID` = ?;
+            $filter = [];
+            $execute = [];
+            $arSql = [];
+            $sql = 'UPDATE '. $table . ' SET ';
+
+            foreach( $arFields as $key => $value ) {
+                $arSql[] = $key . ' = :' . $value; //`LOGIN` = :LOGIN
+            }
+
+            if( !empty($arSql) ) {
+                $sql .= join(', ', $arSql);
+            }
+            //UPDATE `users` SET `LOGIN` = :LOGIN, `PASSWORD` = :PASSWORD
+
+            $this->prepareFilter(['ID' => $id], $sql, $filter, $execute );
+            //UPDATE `users` SET `LOGIN` = :LOGIN, `PASSWORD` = :PASSWORD WHERE `users`.`ID` = ?;
+
+            $request = $this->conn->prepare($sql);
+
+            foreach( $arFields as $key => $value ) {
+                $request->bindValue(":".$key, $value);
+            }
+
+            if($request->execute($execute)) {
+                return true;
+            }
+            else {
+                Logs::add2Log("Update error: ". $sql);
+                return false;
+            }
+
+        }
+        catch(PDOException $e) {
+            Logs::add2Log('update: '. $e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteById(string $table, int $id) {
+        return $this->delete($table, ['filter' => ['ID'=> $id]]);
+    }
+
+    public function getById(string $table, int $id) {
+        return $this->getList($table, [
+            'filter' => ['ID' => $id]
+        ]);
+    }
 }
+
