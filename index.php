@@ -19,12 +19,4 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/core/header.php');
 
     <pre><?print_r($arResult);?></pre>
 
-    <?
-    Application::initComponent('news.list', [
-        'table' => 'news',
-        'count' => 10
-    ]);
-    
-    ?>
-
 <?php require_once($_SERVER['DOCUMENT_ROOT'] . '/core/footer.php');?>

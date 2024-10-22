@@ -23,4 +23,8 @@ class Settings {
         return $this->arSettings['session'];
     }
 
+    public function getCacheParams():mixed
+    {
+        return $this->arSettings['cache_flags'];
+    }
 }
