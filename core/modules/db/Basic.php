@@ -247,5 +247,13 @@ class Basic
             'filter' => ['ID' => $id]
         ]);
     }
+
+    public function getCount(string $table) {
+        $ob = $this->getList($table, [
+            'select' => ['ID']
+        ]);
+
+        return count($ob);
+    }
 }
 

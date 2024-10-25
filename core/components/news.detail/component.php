@@ -29,19 +29,13 @@ if(!$arParams['TABLE_NAME']) {
     //throw new Exception('Нет таблицы');
 }
 
-$arParams['COUNT_ELEMENT'] = isset($arParams['COUNT_ELEMENT']) ? $arParams['COUNT_ELEMENT'] : 10;
 $arParams['QUERY_PARAMS'] = isset($arParams['QUERY_PARAMS']) ? $arParams['QUERY_PARAMS'] :[];
 
-//Текущая страница и стартовая позиция запроса
-$offset = 0;
-if(isset($_GET['page']) && (int)$_GET['page'] > 1) {
-    $offset = (int)$_GET['page'] * (int)$arParams['COUNT_ELEMENT'] - (int)$arParams['COUNT_ELEMENT'];
-}
 $currentPage = Application::getCurPage();
 
 //кеширование
 $nameCacheFile = md5($currentPage) . '.html';
-$directory = $cache['value']['cache_path'] . 'components/news.list/';
+$directory = $cache['value']['cache_path'] . 'components/news.detail/';
 $cacheFile = $directory . $nameCacheFile;
 
 if(!is_dir($directory)) {
@@ -57,26 +51,19 @@ if($arParams['CACHE_ACTIVE'] == 'Y' && file_exists($cacheFile)) {
 
 ob_start();
 
-$params = [
-    'limit' => [
-        'rows' => $arParams['COUNT_ELEMENT'],
-        'offset' => $offset
-    ]
-];
-
 $ob = new Basic();
-$arResult['ITEMS'] = $ob->getList($arParams['TABLE_NAME'], $params);
+$arResult = $ob->getById($arParams['TABLE_NAME'], $arParams['ELEMENT_ID'])[0];
 
-if($arParams['SHOW_PAGER'] === 'Y') {
-    $count = $ob->getCount($arParams['TABLE_NAME']);
-    $arResult['COUNT_PAGE'] = round($count / (int)$arParams['COUNT_ELEMENT']);
-}
 
 if(file_exists($templatePath . '/result_modifer.php'))
 {
     require $templatePath . '/result_modifer.php';
 }
-require $templatePath . '/template.php';
+
+if(file_exists($templatePath . '/template.php'))
+{
+    require $templatePath . '/template.php';
+}
 
 if($arParams['CACHE_ACTIVE'] == 'Y') {
     $handle = fopen($cacheFile,'w');

@@ -3,20 +3,16 @@ require_once($_SERVER['DOCUMENT_ROOT'] . '/core/header.php');
 
 ?>
 
-    <?php
-    $result = new DB\Basic();
-    
-    $arResult = $result->getList('users', [
-        'select' => ['LOGIN'],
-        'limit' => [
-            'rows' => 2,
-            'offset' => 1
-        ]
-    ]);
+<? Main\Application::includeComponent('news.list', '.default', [
+    'TABLE_NAME' => 'users',
+    'CACHE_ACTIVE' => 'N',
+    'COUNT_ELEMENT' => 2,
+    'SHOW_PAGER' => 'Y'
+]);?>
 
-    //$result->add('users', ['LOGIN' => 'tester', 'PASSWORD' => "777777"]);
-    ?>
-
-    <pre><?print_r($arResult);?></pre>
+<? Main\Application::includeComponent('news.detail', 'exmpl', [
+    'TABLE_NAME' => 'users',
+    'ELEMENT_ID' => 3
+]);?>
 
 <?php require_once($_SERVER['DOCUMENT_ROOT'] . '/core/footer.php');?>

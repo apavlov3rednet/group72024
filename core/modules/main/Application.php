@@ -62,6 +62,8 @@ class Application {
             $arParams = require $templatePath . '/.parameters.php';
         }
 
+        $arParams = array_merge($arParams, $params);
+
         //Подключение entry-point компонента
         if(file_exists($componentPath . '/component.php')) {
             require ($componentPath . '/component.php');
